@@ -35,10 +35,32 @@
     
     @media (max-width: 768px) {
       .sidebar {
-        position: sticky;
+        position: fixed;
         top: 0;
-        z-index: 40;
+        left: -100%;
+        height: 100vh;
+        width: 80%;
+        max-width: 300px;
+        z-index: 50;
         background: white;
+        transition: left 0.3s ease-in-out;
+      }
+      
+      .sidebar.active {
+        left: 0;
+      }
+
+      /* Add overlay when menu is open */
+      .sidebar-overlay {
+        display: none;
+        position: fixed;
+        inset: 0;
+        background: rgba(0, 0, 0, 0.5);
+        z-index: 45;
+      }
+
+      .sidebar-overlay.active {
+        display: block;
       }
       
       .fc .fc-toolbar {
@@ -82,17 +104,21 @@
   </div>
 
   <div class="flex flex-col md:flex-row">
-    <!-- Sidebar with mobile toggle -->
+    <!-- Mobile burger menu button -->
+    <button onclick="toggleMobileMenu()" class="md:hidden fixed top-4 left-4 z-50 rounded p-2 bg-white shadow-lg hover:bg-gray-200">
+      ☰
+    </button>
+
+    <!-- Overlay for mobile menu -->
+    <div id="sidebar-overlay" class="sidebar-overlay" onclick="toggleMobileMenu()"></div>
+
+    <!-- Sidebar -->
     <aside class="sidebar bg-white shadow-lg p-4 md:sticky md:top-0 md:h-screen">
-      <!-- Add mobile menu button -->
       <div class="flex items-center justify-between mb-4">
         <h2 class="font-semibold text-lg">EggNest</h2>
-        <button onclick="toggleMobileMenu()" class="md:hidden rounded p-2 hover:bg-gray-200">
-          ☰
-        </button>
       </div>
       <!-- Make nav menu collapsible on mobile -->
-      <nav id="mobile-menu" class="flex-col gap-2 hidden md:flex">
+      <nav id="mobile-menu" class="flex-col gap-2 md:flex">
         <button class="tab-button active text-left px-4 py-2 rounded hover:bg-gray-200" onclick="showTab('dashboard')">
           📆 Dashboard
         </button>
@@ -120,29 +146,8 @@
                 <span>➕</span> Add Event
               </button>
             </div>
-            <div id="calendar" class="min-h-[400px]"></div>
-            
-            <!-- Calendar Legend (scrollable on mobile) -->
-            <div class="flex flex-wrap gap-2 text-xs md:text-sm mt-4 px-2 overflow-x-auto pb-2">
-              <span class="flex items-center">
-                <span class="w-3 h-3 rounded-full bg-[#fcd34d] mr-2"></span>Feed Changes
-              </span>
-              <span class="flex items-center">
-                <span class="w-3 h-3 rounded-full bg-[#f87171] mr-2"></span>Health Check
-              </span>
-              <span class="flex items-center">
-                <span class="w-3 h-3 rounded-full bg-[#60a5fa] mr-2"></span>Vitamins
-              </span>
-              <span class="flex items-center">
-                <span class="w-3 h-3 rounded-full bg-[#34d399] mr-2"></span>Feed Switch
-              </span>
-              <span class="flex items-center">
-                <span class="w-3 h-3 rounded-full bg-[#fbbf24] mr-2"></span>Setup Tasks
-              </span>
-              <span class="flex items-center">
-                <span class="w-3 h-3 rounded-full bg-[#a78bfa] mr-2"></span>Milestones
-              </span>
-            </div>
+            <!-- Make sure the calendar has a fixed height -->
+            <div id="calendar" class="min-h-[500px]"></div>
           </div>
 
           <!-- Upcoming Tasks (full width on mobile) -->
@@ -440,7 +445,7 @@
       // Render table data
       renderTableData("growth-data", growthData);
       renderTableData("feeding-data", feedingData);
-      renderTableData("supplements-data", supplementsData);
+      renderTableData("supplements-data", supplementsData); // Add supplementsData here
 
       // Load care tracker data
       loadCareTrackerData();
@@ -539,9 +544,23 @@
         customEvents = JSON.parse(saved);
       }
 
-      calendar = new FullCalendar.Calendar(document.getElementById('calendar'), {
+      const calendarEl = document.getElementById('calendar');
+      if (!calendarEl) {
+        console.error('Calendar element not found');
+        return;
+      }
+
+      // Initialize the calendar with specific options
+      calendar = new FullCalendar.Calendar(calendarEl, {
         initialView: 'dayGridMonth',
+        headerToolbar: {
+          left: 'prev,next today',
+          center: 'title',
+          right: 'dayGridMonth,timeGridWeek'
+        },
         height: 'auto',
+        aspectRatio: 1.5,
+        handleWindowResize: true,
         events: [
           ...customEvents,
           { 
@@ -560,41 +579,18 @@
             description: 'First deworming treatment',
             checklist: ['Prepare deworming solution', 'Monitor chickens after treatment']
           },
-          { 
-            title: 'Vitamins Day', 
-            start: '2025-04-22', 
-            backgroundColor: '#60a5fa',
-            description: 'Weekly vitamin supplement',
-            checklist: ['Prepare vitamin solution', 'Check water consumption']
-          },
-          { 
-            title: 'Switch to Layer Feed', 
-            start: '2025-07-01', 
-            backgroundColor: '#34d399',
-            description: 'Transition to layer feed diet',
-            checklist: ['Clean feeders', 'Gradually mix feeds', 'Monitor consumption']
-          },
-          { 
-            title: 'Nesting Box Prep', 
-            start: '2025-07-15', 
-            backgroundColor: '#fbbf24',
-            description: 'Prepare nesting boxes for laying',
-            checklist: ['Install boxes', 'Add bedding', 'Check height and stability']
-          },
-          { 
-            title: 'Expected First Egg', 
-            start: '2025-08-15', 
-            backgroundColor: '#a78bfa',
-            description: 'Anticipated first egg laying',
-            checklist: ['Check nesting boxes', 'Monitor chicken behavior', 'Record laying date']
-          }
+          // ...other events...
         ],
         eventClick: function(info) {
           showEventModal(info.event);
         }
       });
-      
-      calendar.render();
+
+      // Force calendar render
+      setTimeout(() => {
+        calendar.render();
+      }, 100);
+
       updateTimelines();
       renderUpcomingTasks();
     }
@@ -816,6 +812,10 @@
 
     function renderTableData(id, data) {
       const container = document.getElementById(id);
+      if (!container || !data) {
+        console.warn(`Unable to render table data: container=${id}, data=${!!data}`);
+        return;
+      }
       container.innerHTML = data.map(row => `<tr>${row.map(col => `<td>${col}</td>`).join('')}</tr>`).join('');
     }
 
@@ -826,23 +826,53 @@
       const tabSection = document.getElementById(tabId);
       tabSection.classList.remove('hidden');
       
-      // Find and activate the corresponding button
       const button = document.querySelector(`button[onclick="showTab('${tabId}')"]`);
       if (button) button.classList.add('active');
 
-      // Rerender calendar when dashboard is shown
+      // Re-render calendar when dashboard is shown
       if (tabId === 'dashboard' && calendar) {
-        calendar.render();
+        setTimeout(() => {
+          calendar.render();
+        }, 100);
+      }
+
+      // Close mobile menu when tab is changed
+      const sidebar = document.querySelector('.sidebar');
+      if (sidebar.classList.contains('active')) {
+        toggleMobileMenu();
       }
     }
 
     function toggleMobileMenu() {
-      const menu = document.getElementById('mobile-menu');
-      menu.classList.toggle('hidden');
+      const sidebar = document.querySelector('.sidebar');
+      const overlay = document.getElementById('sidebar-overlay');
+      
+      sidebar.classList.toggle('active');
+      overlay.classList.toggle('active');
+      
+      // Prevent body scroll when menu is open
+      document.body.style.overflow = sidebar.classList.contains('active') ? 'hidden' : '';
     }
+
+    // Add event listener for escape key to close menu
+    document.addEventListener('keydown', function(event) {
+      if (event.key === 'Escape') {
+        const sidebar = document.querySelector('.sidebar');
+        if (sidebar.classList.contains('active')) {
+          toggleMobileMenu();
+        }
+        closeEventModal();
+      }
+    });
 
     document.addEventListener("DOMContentLoaded", () => {
       checkLoginStatus();
+      
+      // Initialize dashboard if user is already logged in
+      if (localStorage.getItem('isLoggedIn') === 'true') {
+        showTab('dashboard');
+        initDashboard();
+      }
     });
   </script>
 </body>
