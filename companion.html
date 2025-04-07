@@ -44,7 +44,24 @@
       </div>
     </div>
   </section>
-
+<!-- Starter Checklist -->
+<section id="checklist" class="py-12 px-6 bg-white">
+    <div class="max-w-xl mx-auto">
+      <h2 class="text-2xl font-bold text-yellow-600 mb-6 text-center">🧺 Starter Checklist</h2>
+      <p class="text-sm text-gray-600 mb-4 text-center">Make sure you have everything ready before your chicks arrive!</p>
+      <ul id="checklistItems" class="space-y-3">
+        <!-- JS inserts checklist items here -->
+      </ul>
+    </div>
+  </section>
+  
+  <!-- Bottom Sticky Nav -->
+  <nav class="fixed bottom-0 inset-x-0 bg-white border-t shadow-md flex justify-around text-sm text-gray-700 font-medium py-2 z-50">
+    <a href="#welcome" class="hover:text-yellow-600">🏠 Home</a>
+    <a href="#journey" class="hover:text-yellow-600">📆 Journey</a>
+    <a href="#checklist" class="hover:text-yellow-600">🧺 Checklist</a>
+  </nav>
+  
   <script>
     const chickStages = [
       {
@@ -114,6 +131,44 @@
         container.innerHTML += card;
       });
     }
+    const checklistItems = [
+  "🐣 Chick brooder (box, cage, or enclosure)",
+  "🛏️ Bedding (wood shavings, rice hull)",
+  "🍽️ Chick feeder and waterer",
+  "🥣 Starter or grower feed",
+  "💊 Multivitamins / electrolytes",
+  "🧼 Cleaning tools (brush, gloves)",
+  "📦 Grit (optional if not free-ranging)",
+  "🌿 Access to sunlight or heat lamp (week 1–2)",
+  "📓 Notebook or journal for tracking"
+];
+
+function renderChecklist() {
+  const saved = JSON.parse(localStorage.getItem("starterChecklistDone")) || {};
+  const container = document.getElementById("checklistItems");
+
+  container.innerHTML = checklistItems.map((item, i) => {
+    const checked = saved[i] ? "checked" : "";
+    return `
+      <li class="flex items-start space-x-3 bg-gray-50 px-4 py-3 rounded-xl shadow-sm">
+        <input type="checkbox" id="check${i}" class="mt-1 h-5 w-5 text-yellow-600" ${checked}
+          onchange="saveChecklist(${i}, this.checked)" />
+        <label for="check${i}" class="text-sm">${item}</label>
+      </li>
+    `;
+  }).join('');
+}
+
+function saveChecklist(index, isChecked) {
+  const saved = JSON.parse(localStorage.getItem("starterChecklistDone")) || {};
+  saved[index] = isChecked;
+  localStorage.setItem("starterChecklistDone", JSON.stringify(saved));
+}
+
+document.addEventListener("DOMContentLoaded", () => {
+  renderTimeline();
+  renderChecklist();
+});
 
     document.addEventListener("DOMContentLoaded", renderTimeline);
   </script>
