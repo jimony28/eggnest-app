@@ -150,6 +150,53 @@
             <div id="calendar" class="min-h-[500px]"></div>
           </div>
 
+          <!-- Add this right after the calendar area in the dashboard section -->
+          <div class="col-span-1 bg-white p-4 rounded-xl shadow">
+            <div id="daily-tasks-container" class="space-y-4">
+              <!-- Stage Overview Card -->
+              <div class="bg-yellow-100 border-l-4 border-yellow-500 p-4 rounded">
+                <div class="flex justify-between items-start">
+                  <div>
+                    <p id="stage-title" class="font-bold">🐥 Loading...</p>
+                    <p id="stage-desc" class="text-sm text-gray-700 mt-1">Checking stage...</p>
+                  </div>
+                  <p id="current-date" class="text-sm text-gray-600">...</p>
+                </div>
+              </div>
+
+              <!-- Progress Tracker -->
+              <div class="mt-4">
+                <div class="w-full bg-gray-200 rounded-full h-2 mb-2">
+                  <div id="stage-progress" class="bg-yellow-500 h-2 rounded-full transition-all duration-500" style="width: 0%"></div>
+                </div>
+                <p id="progress-text" class="text-xs text-gray-500">Calculating progress...</p>
+              </div>
+
+              <!-- Add this right before the Daily Checklist section -->
+              <div id="checklist-status" class="hidden mt-4 p-3 rounded text-center">
+                <div class="completed-status hidden bg-green-100 text-green-700 p-3 rounded">
+                  🎉 All daily tasks completed! Great job!
+                </div>
+                <div class="partial-status hidden bg-yellow-100 text-yellow-700 p-3 rounded">
+                  🔄 Keep going! Some tasks still need attention.
+                </div>
+              </div>
+
+              <!-- Daily Checklist -->
+              <div class="mt-6">
+                <h3 class="font-semibold mb-3">✅ Daily Checklist</h3>
+                <ul id="daily-checklist" class="space-y-3">
+                  <!-- Tasks will be inserted here -->
+                </ul>
+              </div>
+
+              <!-- Tip of the Day -->
+              <div id="daily-tip" class="bg-blue-100 p-3 rounded text-sm mt-4">
+                💡 <strong>Tip:</strong> Loading today's tip...
+              </div>
+            </div>
+          </div>
+
           <!-- Upcoming Tasks (full width on mobile) -->
           <div class="bg-white p-4 rounded-xl shadow">
             <h3 class="text-lg font-semibold mb-3">📌 Upcoming Tasks</h3>
@@ -374,6 +421,7 @@
   </div>
 
   <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.8/index.global.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.5.1/dist/confetti.browser.min.js"></script>
   <script>
     // Add this at the beginning of your script section
     // Mock user data - in a real app, this would be server-side
@@ -445,7 +493,7 @@
       // Render table data
       renderTableData("growth-data", growthData);
       renderTableData("feeding-data", feedingData);
-      renderTableData("supplements-data", supplementsData); // Add supplementsData here
+      renderTableData("supplements-data"); // Add supplementsData here
 
       // Load care tracker data
       loadCareTrackerData();
@@ -484,6 +532,130 @@
 
     // Initialize custom events storage
     let customEvents = [];
+
+    const dailyTips = [
+      "Chicks enjoy soft music — it helps them relax!",
+      "Fresh greens make a healthy treat",
+      "Watch for normal pecking behavior",
+      "Keep feed and water containers clean",
+      "Observe chicks' activity levels daily",
+      "Monitor temperature in the coop",
+      "Check for proper ventilation",
+      "Look for signs of happy, active chicks"
+    ];
+
+    function updateDailyTasks() {
+      const today = new Date();
+      const startDate = new Date('2025-04-01'); // Your project start date
+      const ageInWeeks = Math.floor((today - startDate) / (7 * 24 * 60 * 60 * 1000));
+      
+      // Update date
+      document.getElementById('current-date').textContent = today.toLocaleDateString();
+
+      // Update stage info
+      let stage, description, progress;
+      if (ageInWeeks < 8) {
+        stage = "🐥 Grower Stage (Week " + ageInWeeks + ")";
+        description = "Focus on high-protein feed and weekly vitamins";
+        progress = (ageInWeeks / 8) * 100;
+      } else if (ageInWeeks < 16) {
+        stage = "🐤 Pre-laying Stage (Week " + ageInWeeks + ")";
+        description = "Preparing for egg production";
+        progress = ((ageInWeeks - 8) / 8) * 100;
+      } else {
+        stage = "🐔 Layer Stage (Week " + ageInWeeks + ")";
+        description = "Ready for egg production";
+        progress = 100;
+      }
+
+      document.getElementById('stage-title').textContent = stage;
+      document.getElementById('stage-desc').textContent = description;
+      document.getElementById('stage-progress').style.width = `${progress}%`;
+      document.getElementById('progress-text').textContent = 
+        `Week ${ageInWeeks} - ${Math.round(progress)}% through current stage`;
+
+      // Generate daily tasks
+      const dailyTasks = [
+        { text: "Feed Grower Crumble 🍽️ (2x today)", id: "feed" },
+        { text: "Replace water 🫗", id: "water" },
+        { text: "Clean the cage area 🧹", id: "clean" },
+        { text: "Check for health issues 🏥", id: "health" },
+        { text: "Add grit if needed 🪨", id: "grit" }
+      ];
+
+      const checklist = document.getElementById('daily-checklist');
+      checklist.innerHTML = dailyTasks.map(task => `
+        <li class="flex items-center space-x-3">
+          <input type="checkbox" id="${task.id}" 
+                class="h-5 w-5 text-green-600 rounded"
+                onchange="saveDailyProgress(this)">
+          <label for="${task.id}" class="cursor-pointer">${task.text}</label>
+        </li>
+      `).join('');
+
+      // Load saved progress
+      loadDailyProgress();
+
+      // Update checklist status
+      updateChecklistCompletion();
+
+      // Update tip of the day
+      const tipIndex = Math.floor(Math.random() * dailyTips.length);
+      document.getElementById('daily-tip').innerHTML = 
+        `💡 <strong>Tip:</strong> ${dailyTips[tipIndex]}`;
+    }
+
+    function updateChecklistCompletion() {
+      const checkboxes = document.querySelectorAll('#daily-checklist input[type="checkbox"]');
+      const totalTasks = checkboxes.length;
+      const completedTasks = Array.from(checkboxes).filter(cb => cb.checked).length;
+      
+      const statusElement = document.getElementById('checklist-status');
+      const completedStatus = statusElement.querySelector('.completed-status');
+      const partialStatus = statusElement.querySelector('.partial-status');
+      
+      statusElement.classList.remove('hidden');
+      
+      if (completedTasks === totalTasks) {
+        completedStatus.classList.remove('hidden');
+        partialStatus.classList.add('hidden');
+        
+        // Save completion status
+        const today = new Date().toLocaleDateString();
+        localStorage.setItem(`dailyComplete_${today}`, 'true');
+        
+        // Optional: Show celebration animation
+        confetti();
+      } else {
+        completedStatus.classList.add('hidden');
+        partialStatus.classList.remove('hidden');
+        partialStatus.textContent = `🔄 Progress: ${completedTasks}/${totalTasks} tasks completed`;
+      }
+    }
+
+    function saveDailyProgress(checkbox) {
+      const date = new Date().toLocaleDateString();
+      let progress = JSON.parse(localStorage.getItem('dailyProgress') || '{}');
+      if (!progress[date]) progress[date] = {};
+      progress[date][checkbox.id] = checkbox.checked;
+      localStorage.setItem('dailyProgress', JSON.stringify(progress));
+      
+      // Check completion status after each checkbox change
+      updateChecklistCompletion();
+    }
+
+    function loadDailyProgress() {
+      const date = new Date().toLocaleDateString();
+      const progress = JSON.parse(localStorage.getItem('dailyProgress') || '{}');
+      if (progress[date]) {
+        Object.entries(progress[date]).forEach(([id, checked]) => {
+          const checkbox = document.getElementById(id);
+          if (checkbox) checkbox.checked = checked;
+        });
+      }
+      // Check initial completion status
+      updateChecklistCompletion();
+    }
 
     document.addEventListener('keydown', function(event) {
       if (event.key === 'Escape') {
@@ -593,6 +765,8 @@
 
       updateTimelines();
       renderUpcomingTasks();
+      updateDailyTasks();
+      setInterval(updateDailyTasks, 1800000); // Update every 30 minutes
     }
 
     function updateTimelines() {
@@ -864,6 +1038,38 @@
         closeEventModal();
       }
     });
+
+    function confetti() {
+      const defaults = {
+        spread: 360,
+        ticks: 50,
+        gravity: 0,
+        decay: 0.94,
+        startVelocity: 30,
+        shapes: ['star'],
+        colors: ['FFE400', 'FFBD00', 'E89400', 'FFCA6C', 'FDFFB8']
+      };
+
+      function shoot() {
+        confetti({
+          ...defaults,
+          particleCount: 40,
+          scalar: 1.2,
+          shapes: ['star']
+        });
+
+        confetti({
+          ...defaults,
+          particleCount: 10,
+          scalar: 0.75,
+          shapes: ['circle']
+        });
+      }
+
+      setTimeout(shoot, 0);
+      setTimeout(shoot, 100);
+      setTimeout(shoot, 200);
+    }
 
     document.addEventListener("DOMContentLoaded", () => {
       checkLoginStatus();
