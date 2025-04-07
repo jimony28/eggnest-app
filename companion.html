@@ -1,35 +1,121 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
+  <meta charset="UTF- />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>EggNest Companion</title>
   <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet">
   <style>
+    html {
+      scroll-behavior: smooth;
+    }
     body {
       font-family: 'Inter', sans-serif;
       background-color: #fffdf9;
     }
   </style>
 </head>
-<body class="min-h-screen flex items-center justify-center px-6 py-12">
-  <div class="max-w-xl text-center space-y-6">
-    <h1 class="text-4xl font-bold text-yellow-600">🐣 Welcome to EggNest</h1>
-    <p class="text-gray-700 text-lg">
-      Your step-by-step companion for raising egg-laying chickens in your backyard.  
-      Let’s grow happy hens, one day at a time 🇵🇭
-    </p>
-    <img src="https://i.imgur.com/KV8nF0R.png" alt="Cute chick" class="mx-auto w-32">
-    <button onclick="goToJourney()" class="mt-6 bg-yellow-500 hover:bg-yellow-600 text-white font-semibold px-6 py-3 rounded-full transition">
-      🚀 Start Growing
-    </button>
-  </div>
+<body class="min-h-screen text-gray-800">
+
+  <!-- Welcome Section -->
+  <section class="min-h-screen flex flex-col items-center justify-center px-6 py-12 text-center space-y-6 bg-white">
+    <div class="max-w-xl space-y-6">
+      <h1 class="text-4xl font-bold text-yellow-600">🐣 Welcome to EggNest</h1>
+      <p class="text-gray-700 text-lg">
+        Your step-by-step companion for raising egg-laying chickens in your backyard.<br>
+        Let’s grow happy hens, one day at a time 🇵🇭
+      </p>
+      <img src="https://i.imgur.com/KV8nF0R.png" alt="Cute chick" class="mx-auto w-32">
+      <a href="#journey">
+        <button class="mt-6 bg-yellow-500 hover:bg-yellow-600 text-white font-semibold px-6 py-3 rounded-full transition">
+          🚀 Start Growing
+        </button>
+      </a>
+    </div>
+  </section>
+
+  <!-- Chick Journey Timeline -->
+  <section id="journey" class="py-12 bg-white px-6">
+    <div class="max-w-2xl mx-auto space-y-8">
+      <h2 class="text-2xl font-bold text-yellow-600 text-center">📆 Chick Growth Journey</h2>
+      <div id="stageTimeline" class="space-y-4">
+        <!-- Timeline cards will be injected here by JS -->
+      </div>
+    </div>
+  </section>
 
   <script>
-    function goToJourney() {
-      window.location.href = "#journey"; // or scroll to section when it exists
+    const chickStages = [
+      {
+        label: "🐣 Brooder Phase",
+        range: "Week 1–4",
+        desc: "Keep them warm, dry, and safe. Focus on clean brooder, starter feed, and gentle handling.",
+        minWeek: 0,
+        maxWeek: 3
+      },
+      {
+        label: "🌱 Grower Stage",
+        range: "Week 5–8",
+        desc: "Switch to grower feed, introduce grit if not free-ranging. Give them more space to roam.",
+        minWeek: 4,
+        maxWeek: 7
+      },
+      {
+        label: "🪺 Pre-laying Phase",
+        range: "Week 9–16",
+        desc: "Add greens and treats, start preparing nesting areas. Watch for behavioral changes.",
+        minWeek: 8,
+        maxWeek: 15
+      },
+      {
+        label: "🥚 Laying Time!",
+        range: "Week 17+",
+        desc: "Layer feed, daily egg checks, and calcium support. Congrats — you're now collecting eggs!",
+        minWeek: 16,
+        maxWeek: 52
+      }
+    ];
+
+    const hatchDate = new Date(localStorage.getItem("hatchDate")) || new Date(prompt("Enter hatch date (YYYY-MM-DD):"));
+    localStorage.setItem("hatchDate", hatchDate.toISOString().split("T")[0]);
+
+    const today = new Date();
+    const ageInDays = Math.floor((today - new Date(hatchDate)) / (1000 * 60 * 60 * 24));
+    const ageInWeeks = Math.floor(ageInDays / 7);
+
+    function renderTimeline() {
+      const container = document.getElementById("stageTimeline");
+      container.innerHTML = "";
+
+      chickStages.forEach((stage) => {
+        let status = "";
+        if (ageInWeeks > stage.maxWeek) {
+          status = "✅ Completed";
+        } else if (ageInWeeks >= stage.minWeek && ageInWeeks <= stage.maxWeek) {
+          status = "✨ Active";
+        } else {
+          status = "🔒 Locked";
+        }
+
+        const isCurrent = status === "✨ Active";
+
+        const card = `
+          <div class="p-4 border rounded-lg shadow-sm ${isCurrent ? 'border-yellow-400 bg-yellow-50' : 'bg-gray-50'}">
+            <div class="flex justify-between items-center mb-2">
+              <h3 class="text-lg font-semibold">${stage.label}</h3>
+              <span class="text-sm ${isCurrent ? 'text-yellow-600' : 'text-gray-500'}">${status}</span>
+            </div>
+            <p class="text-sm text-gray-600">${stage.range}</p>
+            <p class="text-sm mt-2 text-gray-700">${stage.desc}</p>
+          </div>
+        `;
+
+        container.innerHTML += card;
+      });
     }
+
+    document.addEventListener("DOMContentLoaded", renderTimeline);
   </script>
 </body>
 </html>
