@@ -1,0 +1,15 @@
+Add onboarding flow
+Implement confetti celebration
+Add proper error handling
+Consider adding offline support
+Add data backup/restore functionality
+Add settings/preferences section
+
+--> login feature
+Add a reset login or dev-only override if you ever get locked out
+
+Later, you can store user-specific chick data under:
+
+username_hatchDate
+
+username_starterChecklistDone, etc.
